@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.springframework.http.MediaType;
-import org.springframework.social.NotAuthorizedException;
 
 /**
  * @author Craig Walls
@@ -33,7 +32,7 @@ public class CommentTemplateTest extends AbstractFacebookApiTest {
 	
 	@Test
 	public void getComments() throws Exception {
-		mockServer.expect(requestTo("https://graph.facebook.com/v2.0/123456/comments?offset=0&limit=25"))
+		mockServer.expect(requestTo(fbUrl("123456/comments?offset=0&limit=25")))
 			.andExpect(method(GET))
 			.andExpect(header("Authorization", "OAuth someAccessToken"))
 			.andRespond(withSuccess(jsonResource("comments"), MediaType.APPLICATION_JSON));
@@ -52,7 +51,7 @@ public class CommentTemplateTest extends AbstractFacebookApiTest {
 
 	@Test
 	public void getComments_withOffsetAndLimit() {
-		mockServer.expect(requestTo("https://graph.facebook.com/v2.0/123456/comments?offset=75&limit=100"))
+		mockServer.expect(requestTo(fbUrl("123456/comments?offset=75&limit=100")))
 			.andExpect(method(GET))
 			.andExpect(header("Authorization", "OAuth someAccessToken"))
 			.andRespond(withSuccess(jsonResource("comments"), MediaType.APPLICATION_JSON));
@@ -83,7 +82,7 @@ public class CommentTemplateTest extends AbstractFacebookApiTest {
 	
 	@Test
 	public void getComment() {
-		mockServer.expect(requestTo("https://graph.facebook.com/v2.0/1533260333_122829644452184_587062?fields=id%2Cattachment%2Ccan_comment%2Ccan_remove%2Ccomment_count%2Ccreated_time%2Cfrom%2Clike_count%2Cmessage%2Cparent%2Cuser_likes"))
+		mockServer.expect(requestTo(fbUrl("1533260333_122829644452184_587062?fields=id%2Cattachment%2Ccan_comment%2Ccan_remove%2Ccomment_count%2Ccreated_time%2Cfrom%2Clike_count%2Cmessage%2Cparent%2Cuser_likes")))
 			.andExpect(method(GET))
 			.andExpect(header("Authorization", "OAuth someAccessToken"))
 			.andRespond(withSuccess(jsonResource("comment"), MediaType.APPLICATION_JSON));
@@ -112,7 +111,7 @@ public class CommentTemplateTest extends AbstractFacebookApiTest {
 	
 	@Test
 	public void addComment() {
-		mockServer.expect(requestTo("https://graph.facebook.com/v2.0/123456/comments"))
+		mockServer.expect(requestTo(fbUrl("123456/comments")))
 			.andExpect(method(POST))
 			.andExpect(content().string("message=Cool+beans"))
 			.andExpect(header("Authorization", "OAuth someAccessToken"))
@@ -120,25 +119,15 @@ public class CommentTemplateTest extends AbstractFacebookApiTest {
 		assertEquals("123456_543210", facebook.commentOperations().addComment("123456", "Cool beans"));
 	}
 	
-	@Test(expected = NotAuthorizedException.class)
-	public void addComment_unauthorized() {
-		unauthorizedFacebook.commentOperations().addComment("123456", "Cool beans");
-	}
-	
 	@Test
 	public void deleteComment() {
-		mockServer.expect(requestTo("https://graph.facebook.com/v2.0/1533260333_122829644452184_587062"))
+		mockServer.expect(requestTo(fbUrl("1533260333_122829644452184_587062")))
 			.andExpect(method(POST))
 			.andExpect(content().string("method=delete"))
 			.andExpect(header("Authorization", "OAuth someAccessToken"))
 			.andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
 		facebook.commentOperations().deleteComment("1533260333_122829644452184_587062");
 		mockServer.verify();
-	}
-
-	@Test(expected = NotAuthorizedException.class)
-	public void deleteComment_unauthorized() {
-		unauthorizedFacebook.commentOperations().deleteComment("1533260333_122829644452184_587062");
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,11 @@ import java.util.Map;
 import org.springframework.social.facebook.api.Action;
 import org.springframework.social.facebook.api.MessageTag;
 import org.springframework.social.facebook.api.Page;
+import org.springframework.social.facebook.api.Post.AdminCreator;
 import org.springframework.social.facebook.api.Post.FriendsPrivacyType;
 import org.springframework.social.facebook.api.Post.PostType;
 import org.springframework.social.facebook.api.Post.Privacy;
+import org.springframework.social.facebook.api.Post.PrivacyType;
 import org.springframework.social.facebook.api.Post.StatusType;
 import org.springframework.social.facebook.api.PostProperty;
 import org.springframework.social.facebook.api.Reference;
@@ -52,6 +54,9 @@ abstract class PostMixin extends FacebookObjectMixin {
 	@JsonProperty("actions")
 	List<Action> actions;
 	
+	@JsonProperty("admin_creator")
+	AdminCreator adminCreator;
+	
 	@JsonProperty("application")
 	Reference application;
 
@@ -72,6 +77,9 @@ abstract class PostMixin extends FacebookObjectMixin {
 	
 	@JsonProperty("is_hidden")
 	boolean isHidden;
+	
+	@JsonProperty("is_published")
+	boolean isPublished;
 
 	@JsonProperty("link")
 	String link;
@@ -131,15 +139,31 @@ abstract class PostMixin extends FacebookObjectMixin {
 	Integer sharesCount;
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	public abstract static class AdminCreatorMixin {
+		
+		@JsonProperty("id")
+		String id;
+		
+		@JsonProperty("name")
+		String name;
+		
+		@JsonProperty("namespace")
+		String namespace;
+		
+	}
+	
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public abstract static class PrivacyMixin {
 		
 		@JsonProperty("description")
 		String description;
 		
 		@JsonProperty("value")
-		Privacy value;
+		@JsonDeserialize(using = PrivacyTypeDeserializer.class)
+		PrivacyType value;
 		
 		@JsonProperty("friends")
+		@JsonDeserialize(using = FriendsPrivacyTypeDeserializer.class)
 		FriendsPrivacyType friends;
 		
 		@JsonProperty("networks")
@@ -160,6 +184,28 @@ abstract class PostMixin extends FacebookObjectMixin {
 				return PostType.valueOf(jp.getText().toUpperCase());
 			} catch (IllegalArgumentException e) {
 				return PostType.UNKNOWN;
+			}
+		}
+	}
+
+	private static class PrivacyTypeDeserializer extends JsonDeserializer<PrivacyType> {
+		@Override
+		public PrivacyType deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			try {
+				return PrivacyType.valueOf(jp.getText().toUpperCase());
+			} catch (IllegalArgumentException e) {
+				return PrivacyType.UNKNOWN;
+			}
+		}
+	}
+
+	private static class FriendsPrivacyTypeDeserializer extends JsonDeserializer<FriendsPrivacyType> {
+		@Override
+		public FriendsPrivacyType deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			try {
+				return FriendsPrivacyType.valueOf(jp.getText().toUpperCase());
+			} catch (IllegalArgumentException e) {
+				return FriendsPrivacyType.UNKNOWN;
 			}
 		}
 	}

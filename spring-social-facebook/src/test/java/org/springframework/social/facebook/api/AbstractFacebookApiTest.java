@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ public class AbstractFacebookApiTest {
 	protected static final String APP_ACCESS_TOKEN = "123456|abcdefg987654321";
 
 	protected FacebookTemplate facebook;
-	protected FacebookTemplate unauthorizedFacebook;
 	protected FacebookTemplate appFacebook;
 	protected MockRestServiceServer mockServer;
 	protected MockRestServiceServer unauthorizedMockServer;
@@ -43,15 +42,12 @@ public class AbstractFacebookApiTest {
 		facebook = createFacebookTemplate();
 		mockServer = MockRestServiceServer.createServer(facebook.getRestTemplate());
 		
-		unauthorizedFacebook = new FacebookTemplate();
-		unauthorizedMockServer = MockRestServiceServer.createServer(unauthorizedFacebook.getRestTemplate());
-		
 		appFacebook = new FacebookTemplate(APP_ACCESS_TOKEN);
 		appFacebookMockServer = MockRestServiceServer.createServer(appFacebook.getRestTemplate());
 	}
 
 	protected FacebookTemplate createFacebookTemplate() {
-		return new FacebookTemplate(ACCESS_TOKEN);
+		return new FacebookTemplate(ACCESS_TOKEN, "APP_NAMESPACE", "APP_ID");
 	}
 
 	protected Resource jsonResource(String filename) {
@@ -64,6 +60,10 @@ public class AbstractFacebookApiTest {
 		} catch (ParseException e) {
 			return null;
 		}
+	}
+	
+	protected String fbUrl(String path) {
+		return GraphApi.GRAPH_API_URL + path;
 	}
 
 	private static final DateFormat FB_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.ENGLISH);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.springframework.social.facebook.api.FacebookProfile;
+import org.springframework.social.facebook.api.User;
 import org.springframework.social.facebook.api.GraphApi;
 import org.springframework.social.facebook.api.ImageType;
 import org.springframework.social.facebook.api.PagedList;
+import org.springframework.social.facebook.api.Permission;
+import org.springframework.social.facebook.api.PlaceTag;
 import org.springframework.social.facebook.api.Reference;
+import org.springframework.social.facebook.api.UserIdForApp;
 import org.springframework.social.facebook.api.UserOperations;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -31,29 +34,26 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-class UserTemplate extends AbstractFacebookOperations implements UserOperations {
+class UserTemplate implements UserOperations {
 
 	private final GraphApi graphApi;
 	
 	private final RestTemplate restTemplate;
 
-	public UserTemplate(GraphApi graphApi, RestTemplate restTemplate, boolean isAuthorizedForUser) {
-		super(isAuthorizedForUser);
+	public UserTemplate(GraphApi graphApi, RestTemplate restTemplate) {
 		this.graphApi = graphApi;
 		this.restTemplate = restTemplate;
 	}
 
-	public FacebookProfile getUserProfile() {
-		requireAuthorization();
+	public User getUserProfile() {
 		return getUserProfile("me");
 	}
 
-	public FacebookProfile getUserProfile(String facebookId) {
-		return graphApi.fetchObject(facebookId, FacebookProfile.class);
+	public User getUserProfile(String facebookId) {
+		return graphApi.fetchObject(facebookId, User.class, PROFILE_FIELDS);
 	}
 	
 	public byte[] getUserProfileImage() {
-		requireAuthorization();
 		return getUserProfileImage("me", ImageType.NORMAL);
 	}
 	
@@ -62,7 +62,6 @@ class UserTemplate extends AbstractFacebookOperations implements UserOperations 
 	}
 
 	public byte[] getUserProfileImage(ImageType imageType) {
-		requireAuthorization();
 		return getUserProfileImage("me", imageType);
 	}
 	
@@ -70,31 +69,36 @@ class UserTemplate extends AbstractFacebookOperations implements UserOperations 
 		return graphApi.fetchImage(userId, "picture", imageType);
 	}
 
-	public List<String> getUserPermissions() {
-		requireAuthorization();
+	public List<Permission> getUserPermissions() {
 		JsonNode responseNode = restTemplate.getForObject(GraphApi.GRAPH_API_URL + "me/permissions", JsonNode.class);
 		return deserializePermissionsNodeToList(responseNode);
 	}
+	
+	public List<UserIdForApp> getIdsForBusiness() {
+		return graphApi.fetchConnections("me", "ids_for_business", UserIdForApp.class);
+	}
+	
+	public List<PlaceTag> getTaggedPlaces() {
+		return graphApi.fetchConnections("me", "tagged_places", PlaceTag.class);
+	}
 
 	public PagedList<Reference> search(String query) {
-		requireAuthorization();
 		MultiValueMap<String, String> queryMap = new LinkedMultiValueMap<String, String>();
 		queryMap.add("q", query);
 		queryMap.add("type", "user");
 		return graphApi.fetchConnections("search", null, Reference.class, queryMap);
 	}
 
-	private List<String> deserializePermissionsNodeToList(JsonNode jsonNode) {
+	private List<Permission> deserializePermissionsNodeToList(JsonNode jsonNode) {
 		JsonNode dataNode = jsonNode.get("data");			
-		List<String> permissions = new ArrayList<String>();
+		List<Permission> permissions = new ArrayList<Permission>();
 		for (Iterator<JsonNode> elementIt = dataNode.elements(); elementIt.hasNext(); ) {
 			JsonNode permissionsElement = elementIt.next();
 			String name = permissionsElement.get("permission").asText();
 			String status = permissionsElement.get("status").asText();
-			if ("granted".equals(status)) {
-				permissions.add(name);
-			}
+			permissions.add(new Permission(name, status));
 		}
 		return permissions;
 	}
+
 }
